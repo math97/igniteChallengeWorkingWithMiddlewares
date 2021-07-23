@@ -10,20 +10,84 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+  if(!username) response.status(400).json({error: 'username not received'});
+
+  const user = users.find(u => u.username === username);
+  if(!user) response.status(404).json({error: 'user not found'});
+
+  request.user = user;
+
+  next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const user = request.user;
+  if(user.pro === false && user.todos.length >= 10) response.status(403).json({error:'User exceed limit of free account'})
+
+  next();
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+
+  let user = request.user;
+  const {id} = request.params;
+  const {username} = request.headers;
+  
+  if(!user || user == undefined) {
+    if(!username) return response.status(400).json({error: 'username not received'});
+    user = users.find(u => u.username === username);
+    if(user == undefined) return response.status(404).json({error: 'user not found'});
+
+  }
+
+  const idIsValid = validate(id);
+  if(idIsValid===false || !id) {
+    return response.status(400).json({error: 'Id not valid'});
+  }
+  const todos = user.todos
+  const todo = todos.find(t=> t.id === id);
+  
+  if(todo === undefined) {
+    return response.status(404).json({error: 'Todo not found'});
+  }else{
+    request.todo = todo;
+    request.user = user;
+  }
+
+
+  // if(!user){  
+  //   const {username} = request.headers;
+  //   if(!username) response.status(400).json({error: 'username not received'});
+
+  //   user = users.find(u => u.username === username);
+  //   if(user === undefined) response.status(404).json({error: 'user not found'});
+
+  //   request.user = user
+  // }
+  // const idIsValid = validate(id);
+  // if(!idIsValid) response.status(400).json({error: 'Id not valid'});
+
+  // if(user && user !== undefined){
+  //   const todo = user.todos.find(t=> t.id === id);
+  
+  //   if(todo === undefined) response.status(404).json({error: 'Todo not found'});
+  
+  //   request.todo = todo;
+  // }
+  return next()
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
-}
+  const {id} = request.params;
+  if(!id) response.status(400).json({error: 'id not received'});
+  const user = users.find(u => u.id === id);
+  if(user === undefined || !user) return response.status(404).json({error: 'user not found'});
+  
+  request.user = user;
+
+  next();}
 
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
